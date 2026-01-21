@@ -22,6 +22,7 @@ export default function Header() {
   const [showCartDropdown, setShowCartDropdown] = useState(false);
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const accountRef = useRef<HTMLDivElement>(null);
@@ -30,6 +31,8 @@ export default function Header() {
   const languageRef = useRef<HTMLDivElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileSearchRef = useRef<HTMLDivElement>(null);
+  const mobileSearchButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     // Check if user is logged in
@@ -69,11 +72,20 @@ export default function Header() {
       ) {
         setShowMobileMenu(false);
       }
+      if (
+        showMobileSearch &&
+        mobileSearchRef.current && 
+        !mobileSearchRef.current.contains(event.target as Node) &&
+        mobileSearchButtonRef.current &&
+        !mobileSearchButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowMobileSearch(false);
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showMobileMenu]);
+  }, [showMobileMenu, showMobileSearch]);
 
   const handleLogout = async () => {
     await fetch('http://localhost:3001/api/auth/logout', {
@@ -134,17 +146,16 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="flex-1 flex items-center max-w-3xl relative min-w-0">
+        {/* Search Bar - Desktop */}
+        <div className="hidden md:flex flex-1 items-center max-w-3xl relative min-w-0">
           <form onSubmit={handleSearch} className="flex w-full relative">
-            <div className="relative hidden sm:block" ref={allRef}>
+            <div className="relative" ref={allRef}>
               <button
                 type="button"
-                className="bg-gray-200 text-gray-700 px-2 sm:px-3 py-2 rounded-l-md hover:bg-gray-300 border-r border-gray-400 text-xs sm:text-sm"
+                className="bg-gray-200 text-gray-700 px-3 py-2 rounded-l-md hover:bg-gray-300 border-r border-gray-400 text-sm"
                 onClick={() => setShowAllDropdown(!showAllDropdown)}
               >
-                <span className="hidden sm:inline">{t('header.all')}</span>
-                <span className="sm:ml-1">▼</span>
+                {t('header.all')} <span className="ml-1">▼</span>
               </button>
               {showAllDropdown && (
                 <div className="absolute top-full left-0 mt-1 bg-white text-black shadow-lg z-50 w-64 p-4 rounded border border-gray-200 max-h-96 overflow-y-auto">
@@ -218,16 +229,169 @@ export default function Header() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 px-2 sm:px-4 py-2 text-black text-sm sm:text-base min-w-0"
+              className="flex-1 px-4 py-2 text-black text-base min-w-0"
               placeholder={t('header.search.placeholder')}
             />
             <button 
               type="submit"
-              className="bg-amazon-orange hover:bg-orange-600 px-3 sm:px-6 py-2 rounded-r-md sm:rounded-r-md"
+              className="bg-amazon-orange hover:bg-orange-600 px-6 py-2 rounded-r-md"
             >
-              <span className="text-sm sm:text-base">🔍</span>
+              <span className="text-base">🔍</span>
             </button>
           </form>
+        </div>
+
+        {/* Mobile Search Icon Button */}
+        <button
+          ref={mobileSearchButtonRef}
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowMobileSearch(!showMobileSearch);
+          }}
+          className="md:hidden flex items-center hover:border-white border border-transparent px-2 py-1"
+          aria-label="Toggle search"
+        >
+          <span className="text-xl">🔍</span>
+        </button>
+
+        {/* Account & Lists */}
+        <div className="hidden md:flex relative" ref={accountRef}>
+          <button
+            onClick={() => setShowAccountDropdown(!showAccountDropdown)}
+            className="flex items-center cursor-pointer hover:border-white border border-transparent px-2 py-1 text-sm"
+          >
+            <div className="text-left">
+              <div className="text-xs text-gray-300">{user ? t('header.hello') : t('header.signIn')}</div>
+              <div className="font-bold">{user ? user.name : t('header.accountLists')}</div>
+            </div>
+          </button>
+          {showAccountDropdown && (
+            <div className="absolute right-0 top-full mt-1 bg-white text-black shadow-xl z-50 w-64 rounded border border-gray-200 p-4">
+              {user ? (
+                <div>
+                  <div className="font-bold text-lg mb-2">{t('header.hello')}, {user.name}</div>
+                  <div className="space-y-2">
+                    <Link href="/account" className="block hover:text-amazon-orange" onClick={() => setShowAccountDropdown(false)}>
+                      {t('account.yourAccount')}
+                    </Link>
+                    <Link href="/account/orders" className="block hover:text-amazon-orange" onClick={() => setShowAccountDropdown(false)}>
+                      {t('account.yourOrders')}
+                    </Link>
+                    <Link href="/account/wishlist" className="block hover:text-amazon-orange" onClick={() => setShowAccountDropdown(false)}>
+                      {t('account.wishlist')}
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left hover:text-amazon-orange"
+                    >
+                      {t('header.signOut')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <Link
+                    href="/login"
+                    className="block w-full bg-amazon-yellow hover:bg-yellow-400 text-black py-2 px-4 rounded text-sm font-semibold text-center mb-2"
+                    onClick={() => setShowAccountDropdown(false)}
+                  >
+                    {t('common.signIn')}
+                  </Link>
+                  <div className="text-xs text-gray-600 text-center">
+                    {t('header.newCustomer')} <Link href="/register" className="text-blue-600 hover:underline">{t('header.startHere')}</Link>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Cart */}
+        <div className="relative" ref={cartRef}>
+          <button
+            onClick={() => setShowCartDropdown(!showCartDropdown)}
+            className="flex items-center cursor-pointer hover:border-white border border-transparent px-2 py-1"
+          >
+            <div className="relative">
+              <span className="text-2xl">🛒</span>
+              {getTotalItems() > 0 && (
+                <span className="absolute -top-2 -right-2 bg-amazon-orange text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {getTotalItems()}
+                </span>
+              )}
+            </div>
+            <span className="hidden md:inline ml-1 font-bold text-sm">{t('header.cart')}</span>
+          </button>
+          {showCartDropdown && (
+            <div className="absolute right-0 top-full mt-1 bg-white text-black shadow-xl z-50 w-80 rounded border border-gray-200">
+              {cart.length === 0 ? (
+                <div className="p-4 text-center">
+                  <p className="text-gray-600 mb-4">{t('cart.empty')}</p>
+                  <Link
+                    href="/"
+                    className="block w-full bg-amazon-yellow hover:bg-yellow-400 text-black font-semibold py-2 px-4 rounded text-center"
+                    onClick={() => setShowCartDropdown(false)}
+                  >
+                    {t('cart.shopDeals')}
+                  </Link>
+                </div>
+              ) : (
+                <div className="max-h-96 overflow-y-auto">
+                  <div className="p-4">
+                    <div className="font-bold text-lg mb-4">{t('cart.title')}</div>
+                    <div className="space-y-4 mb-4">
+                      {cart.map((item) => (
+                        <div key={item.id} className="flex gap-3 border-b pb-3">
+                          <div className="w-16 h-16 bg-gray-100 rounded overflow-hidden relative flex-shrink-0">
+                            <img
+                              src={item.image}
+                              alt={t(item.titleKey)}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <Link
+                              href={`/product/${item.id}`}
+                              className="text-sm font-semibold hover:text-amazon-orange line-clamp-2"
+                              onClick={() => setShowCartDropdown(false)}
+                            >
+                              {t(item.titleKey)}
+                            </Link>
+                            <p className="text-xs text-gray-600 mt-1">{t('common.qty')} {item.quantity}</p>
+                            {item.price && (
+                              <p className="text-sm font-bold text-amazon-orange mt-1">
+                                ${(item.price * item.quantity).toFixed(2)}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => removeFromCart(item.id)}
+                            className="text-red-600 hover:text-red-800 text-sm"
+                            title="Remove"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="border-t pt-4">
+                      <div className="flex justify-between mb-4">
+                        <span className="font-bold">{t('cart.subtotal')}:</span>
+                        <span className="font-bold">${getTotalPrice().toFixed(2)}</span>
+                      </div>
+                      <Link
+                        href="/checkout"
+                        className="block w-full bg-amazon-yellow hover:bg-yellow-400 text-black font-semibold py-2 px-4 rounded text-center"
+                        onClick={() => setShowCartDropdown(false)}
+                      >
+                        {t('cart.checkout')}
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Language Selector */}
@@ -422,6 +586,36 @@ export default function Header() {
           )}
         </div>
       </div>
+
+      {/* Mobile Search Bar */}
+      {showMobileSearch && (
+        <div ref={mobileSearchRef} className="md:hidden bg-amazon-dark border-t border-gray-700 px-4 py-3">
+          <form onSubmit={handleSearch} className="flex w-full relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 px-4 py-2 text-black text-base rounded-l-md min-w-0"
+              placeholder={t('header.search.placeholder')}
+              autoFocus
+            />
+            <button 
+              type="submit"
+              className="bg-amazon-orange hover:bg-orange-600 px-4 py-2 rounded-r-md"
+              onClick={() => setShowMobileSearch(false)}
+            >
+              <span className="text-base">🔍</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowMobileSearch(false)}
+              className="ml-2 px-3 py-2 text-white hover:bg-gray-700 rounded"
+            >
+              ✕
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* Mobile Menu */}
       {showMobileMenu && (
